@@ -13,17 +13,54 @@ def posterAlreadyExists(posterUrl,metadata):
             return True
     return False
 
+# From https://stackoverflow.com/a/5891598
+def ordinalDateSuffix(d):
+    return 'th' if 11<=d<=13 else {1:'st',2:'nd',3:'rd'}.get(d%10, 'th')
+
 def search(results,encodedTitle,title,searchTitle,siteNum,lang,searchByDateActor,searchDate, searchAll, searchSiteID):
-    searchResults = HTML.ElementFromURL('https://tour.swallowed.com/search/' + encodedTitle)
-    for searchResult in searchResults.xpath('//h3[@class="title"]//a'):
-        Log(str(searchResult.get('href')))
-        titleNoFormatting = searchResult.text_content()
-        #relDate = searchResults.xpath('//span[@class="fa fa-calendar"]')[0].text_content().strip()
-        curID = searchResult.get('href').replace('/','_')
-        lowerResultTitle = str(titleNoFormatting).lower()
-        score = 100 - Util.LevenshteinDistance(title.lower(), titleNoFormatting.lower())
-        
-        results.Append(MetadataSearchResult(id = curID + "|" + str(siteNum), name = titleNoFormatting + " [Swallowed]", score = score, lang = lang))
+    if searchDate:
+        #Their search doesn't handle compound terms well, Date is more reliable
+        shortTitle = encodedTitle.split('%20', 1)[0]
+        dayNum = datetime.strptime(searchDate, '%Y-%m-%d').strftime('%e')
+        ordinalDay = dayNum + ordinalDateSuffix(int(dayNum))
+
+        formattedSearchDate = ordinalDay + datetime.strptime(searchDate, '%Y-%m-%d').strftime(' %b %Y')
+        formattedSearchDate = formattedSearchDate.strip()
+        #Log('formattedSearchDate: "' + formattedSearchDate + '"')
+        searchResults = HTML.ElementFromURL('https://tour.swallowed.com/search/' + shortTitle)
+        xpathBaseString = '//div[@class="info-wrap" and contains(div/time,"'+formattedSearchDate+'")]'
+        xpathTitleSuffix = 'div/div/h3/a/@title'
+        xpathLinkSuffix = 'div/div/h3/a/@href'
+        xpathModelSuffix = 'div/div/h4/a/text()'
+        xpathDateSuffix = 'div/time/text()'
+
+        #Log("xpathString: " + xpathBaseString + xpathTitleSuffix)
+        for searchResult in searchResults.xpath(xpathBaseString):
+            title = searchResult.xpath(xpathTitleSuffix)[0]
+            #Log(str(title))
+            titleNoFormatting = title.strip()
+            #Log('titleNoFormatting: "' + titleNoFormatting + '"')
+
+            models = ','.join(searchResult.xpath(xpathModelSuffix))
+
+            relDate = searchResult.xpath(xpathDateSuffix)[0].strip()
+
+            curID = searchResult.xpath(xpathLinkSuffix)[0].replace('https:/','',1).replace('http:/','',1).replace('/','_')
+            lowerResultTitle = str(titleNoFormatting).lower()
+            score = 100 - Util.LevenshteinDistance(title.lower(), titleNoFormatting.lower())
+
+            results.Append(MetadataSearchResult(id = curID + "|" + str(siteNum), name = titleNoFormatting + " [Swallowed]", score = score, lang = lang))
+    else:
+        searchResults = HTML.ElementFromURL('https://tour.swallowed.com/search/' + encodedTitle)
+        for searchResult in searchResults.xpath('//h3[@class="title"]//a'):
+            Log(str(searchResult.get('href')))
+            titleNoFormatting = searchResult.text_content()
+            #relDate = searchResults.xpath('//span[@class="fa fa-calendar"]')[0].text_content().strip()
+            curID = searchResult.get('href').replace('/','_')
+            lowerResultTitle = str(titleNoFormatting).lower()
+            score = 100 - Util.LevenshteinDistance(title.lower(), titleNoFormatting.lower())
+
+            results.Append(MetadataSearchResult(id = curID + "|" + str(siteNum), name = titleNoFormatting + " [Swallowed]", score = score, lang = lang))
     return results
 
 def update(metadata,siteID,movieGenres,movieActors):
