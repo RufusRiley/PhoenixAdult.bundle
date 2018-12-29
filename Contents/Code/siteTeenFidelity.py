@@ -3,6 +3,14 @@ import PAgenres
 def search(results,encodedTitle,title,searchTitle,siteNum,lang,searchByDateActor,searchDate,searchAll,searchSiteID):
     searchPageContent = HTTP.Request("https://www.pornfidelity.com") #The search page seems to redirect to PornFidelity.com if you didn't just come from there, so I open this first to trick it...
     searchPageContent = HTTP.Request("https://www.pornfidelity.com/episodes/search/?site=3&page=1&search=" + encodedTitle)
+    if str(searchPageContent).find('No episodes found, please try again') != -1:
+        #Log(encodedTitle)
+        #Try again with a shortened title
+        shortTitle=re.sub(r"[eE][0-9][0-9]*%20","",encodedTitle)
+        shortTitle=re.sub(r"^([^%][^%]*%20[^%][^%]*)%20.*$",r"\1",shortTitle)
+        Log(encodedTitle + " became " + shortTitle)
+        searchPageContent = HTTP.Request("https://www.pornfidelity.com/episodes/search/?site=3&page=1&search=" + shortTitle)
+
     searchPageContent = str(searchPageContent).split('":"')
     searchPageResult = searchPageContent[len(searchPageContent)-1][:-2]
     searchPageResult = searchPageResult.replace('\\n',"").replace('\\',"")
