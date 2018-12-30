@@ -388,6 +388,13 @@ class PhoenixAdultAgent(Agent.Movies):
                 if searchAll or searchSiteID == 332:
                     results = PAsearchSites.siteSweetSinner.search(results,encodedTitle,title,searchTitle,siteNum,lang,searchByDateActor,searchDate, searchAll, searchSiteID)
 
+            ###############
+            ## TheDickSuckers
+            ###############
+            if siteNum == 341:
+                if searchAll or searchSiteID == 341:
+                    results = PAsearchSites.siteTheDickSuckers.search(results,encodedTitle,title,searchTitle,siteNum,lang,searchByDateActor,searchDate, searchAll, searchSiteID)
+
             siteNum += 1 
 
         results.Sort('score', descending=True)
@@ -749,6 +756,14 @@ class PhoenixAdultAgent(Agent.Movies):
         ##############################################################
         if siteID == 332:
             metadata = PAsearchSites.siteSweetSinner.update(metadata,siteID,movieGenres,movieActors)
+
+        ##############################################################
+        ##                                                          ##
+        ##   TheDickSucker                                          ##
+        ##                                                          ##
+        ##############################################################
+        if siteID == 342:
+            metadata = PAsearchSites.siteTheDickSuckers.update(metadata,siteID,movieGenres,movieActors)
 
         ##############################################################
         ## Cleanup Genres and Add
