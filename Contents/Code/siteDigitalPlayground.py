@@ -14,19 +14,25 @@ def posterAlreadyExists(posterUrl,metadata):
     return False
 
 def search(results,encodedTitle,title,searchTitle,siteNum,lang,searchByDateActor,searchDate,searchAll,searchSiteID):
-    movieSearchResults = HTML.ElementFromURL("https://www.digitalplayground.com/search/movies/" + encodedTitle)
-    for movie in movieSearchResults.xpath('//div[@class="box-card dvd"]'):
-        titleNoFormatting = movie.xpath('.//h4[1]/a[1]')[0].get('title').strip()
-        Log("Result Title: " + titleNoFormatting)
-        moviePage = PAsearchSites.getSearchBaseURL(siteNum) + movie.xpath('.//div[@class="release-info"]/div[@class="info-left"]/div[@class="subtitle-container"]/div/span[@class="subtitle"]/h4/a')[0].get('href')
-        curID = moviePage.replace('/','_').replace("?","!")
-        Log("ID: " + curID)
-        releaseDate = datetime.strptime(movie.xpath('.//div[@class="release-info"]/div[@class="info-left"]/span[2]')[0].text_content().strip(), "%d %B, %Y")
-        lowerResultTitle = str(titleNoFormatting).lower()
-        score = 100 - Util.LevenshteinDistance(title.lower(), titleNoFormatting.lower())
-        results.Append(MetadataSearchResult(id = curID + "|" + str(siteNum), name = titleNoFormatting + " (" + str(releaseDate.year) + ") - Full Movie [" + PAsearchSites.getSearchSiteName(siteNum) + "]", score = score, lang = lang))
-
     videoSearchResults = HTML.ElementFromURL("https://www.digitalplayground.com/search/videos/" + encodedTitle)
+    if len(videoSearchResults.xpath('//h2[@class="no-results"]/span[contains(text(),"try again")]')) > 0:
+        #Log(encodedTitle)
+        #Try again with a shortened title
+        shortTitle=re.sub(r"^.*%20[0-9][0-9]*%20","",encodedTitle)
+        shortTitle=re.sub(r"^[^%][^%]*%20[^%][^%]*%20","",shortTitle)
+        Log(encodedTitle + " became " + shortTitle)
+        videoSearchResults = HTML.ElementFromURL("https://www.digitalplayground.com/search/videos/" + shortTitle)
+    if len(videoSearchResults.xpath('//h2[@class="no-results"]/span[contains(text(),"try again")]')) > 0:
+        #Log(encodedTitle)
+        #Try again with just the stuff on the end
+        shortTitle=re.sub(r"^.*%20[0-9][0-9]*%20","",encodedTitle)
+        shortTitle=re.sub(r"^.*%20[Aa]nd%20","",shortTitle)
+        shortTitle=re.sub(r"%20[Rr]aw%20[Cc]uts%20","%20",shortTitle)
+        shortTitle=re.sub(r"%20[fF]lixxx%20","%20",shortTitle)
+        shortTitle=re.sub(r"^%20","",shortTitle)
+        shortTitle=re.sub(r"^[^%][^%]*%20[^%][^%]*%20","",shortTitle)
+        Log(encodedTitle + " became " + shortTitle)
+        videoSearchResults = HTML.ElementFromURL("https://www.digitalplayground.com/search/videos/" + shortTitle)
     for video in videoSearchResults.xpath('//div[@class="box-card scene"]'):
         titleNoFormatting = video.xpath('.//img[@class=" lazyload"]')[0].get('alt')
         Log("Result Title: " + titleNoFormatting)
@@ -44,6 +50,36 @@ def search(results,encodedTitle,title,searchTitle,siteNum,lang,searchByDateActor
         lowerResultTitle = str(titleNoFormatting).lower()
         score = 100 - Util.LevenshteinDistance(title.lower(), titleNoFormatting.lower())
         results.Append(MetadataSearchResult(id = curID + "|" + str(siteNum), name = titleNoFormatting + " [" + PAsearchSites.getSearchSiteName(siteNum) + "]", score = score, lang = lang))
+
+    movieSearchResults = HTML.ElementFromURL("https://www.digitalplayground.com/search/movies/" + encodedTitle)
+    if len(movieSearchResults.xpath('//h2[@class="no-results"]/span[contains(text(),"try again")]')) > 0:
+        #Log(encodedTitle)
+        #Try again with a shortened title
+        shortTitle=re.sub(r"^.*%20[0-9][0-9]*%20","",encodedTitle)
+        shortTitle=re.sub(r"^([^%][^%]*%20[^%][^%]*)%20.*$",r"\1",shortTitle)
+        Log(encodedTitle + " became " + shortTitle)
+        movieSearchResults = HTML.ElementFromURL("https://www.digitalplayground.com/search/movies/" + shortTitle)
+    if len(movieSearchResults.xpath('//h2[@class="no-results"]/span[contains(text(),"try again")]')) > 0:
+        #Log(encodedTitle)
+        #Try again with just the stuff on the end
+        shortTitle=re.sub(r"^.*%20[0-9][0-9]*%20","",encodedTitle)
+        shortTitle=re.sub(r"^.*%20[Aa]nd%20","",shortTitle)
+        shortTitle=re.sub(r"%20[Rr]aw%20[Cc]uts%20","%20",shortTitle)
+        shortTitle=re.sub(r"%20[fF]lixxx%20","%20",shortTitle)
+        shortTitle=re.sub(r"^%20","",shortTitle)
+        shortTitle=re.sub(r"^[^%][^%]*%20[^%][^%]*%20","",shortTitle)
+        Log(encodedTitle + " became " + shortTitle)
+        movieSearchResults = HTML.ElementFromURL("https://www.digitalplayground.com/search/movies/" + shortTitle)
+    for movie in movieSearchResults.xpath('//div[@class="box-card dvd"]'):
+        titleNoFormatting = movie.xpath('.//h4[1]/a[1]')[0].get('title').strip()
+        Log("Result Title: " + titleNoFormatting)
+        moviePage = PAsearchSites.getSearchBaseURL(siteNum) + movie.xpath('.//div[@class="release-info"]/div[@class="info-left"]/div[@class="subtitle-container"]/div/span[@class="subtitle"]/h4/a')[0].get('href')
+        curID = moviePage.replace('/','_').replace("?","!")
+        Log("ID: " + curID)
+        releaseDate = datetime.strptime(movie.xpath('.//div[@class="release-info"]/div[@class="info-left"]/span[2]')[0].text_content().strip(), "%d %B, %Y")
+        lowerResultTitle = str(titleNoFormatting).lower()
+        score = 100 - Util.LevenshteinDistance(title.lower(), titleNoFormatting.lower())
+        results.Append(MetadataSearchResult(id = curID + "|" + str(siteNum), name = titleNoFormatting + " (" + str(releaseDate.year) + ") - Full Movie [" + PAsearchSites.getSearchSiteName(siteNum) + "]", score = score, lang = lang))
 
     return results
 
