@@ -45,7 +45,7 @@ def search(results,encodedTitle,title,searchTitle,siteNum,lang,searchByDateActor
 
             relDate = searchResult.xpath(xpathDateSuffix)[0].strip()
 
-            curID = searchResult.xpath(xpathLinkSuffix)[0].replace('https:/','',1).replace('http:/','',1).replace('/','_')
+            curID = searchResult.xpath(xpathLinkSuffix)[0].replace('/','_')
             lowerResultTitle = str(titleNoFormatting).lower()
             score = 100 - Util.LevenshteinDistance(title.lower(), titleNoFormatting.lower())
 
@@ -67,10 +67,12 @@ def update(metadata,siteID,movieGenres,movieActors):
     Log('******UPDATE CALLED*******')
     metadata.studio = 'KB Productions'
     url = str(metadata.id).split("|")[0].replace('_','/')
+    if url.startswith('/'):
+        url = 'https:/' + url
     detailsPageElements = HTML.ElementFromURL(url)
 
     # Summary
-    paragraph = detailsPageElements.xpath('//div[@class="desc"]')[0].text_content().strip()
+    paragraph = detailsPageElements.xpath('//div[contains(@class,"desc")]')[0].text_content().strip()
     #paragraph = paragraph.replace('&13;', '').strip(' \t\n\r"').replace('\n','').replace('  ','') + "\n\n"
     metadata.summary = paragraph
     tagline = 'Swallowed'

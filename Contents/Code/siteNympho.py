@@ -46,7 +46,7 @@ def search(results,encodedTitle,title,searchTitle,siteNum,lang,searchByDateActor
 
             relDate = searchResult.xpath(xpathDateSuffix)[0].strip()
 
-            curID = searchResult.xpath(xpathLinkSuffix)[0].replace('https:/','',1).replace('http:/','',1).replace('/','_')
+            curID = searchResult.xpath(xpathLinkSuffix)[0].replace('/','_')
             lowerResultTitle = str(titleNoFormatting).lower()
             score = 100 - Util.LevenshteinDistance(title.lower(), titleNoFormatting.lower())
 
@@ -68,17 +68,19 @@ def update(metadata,siteID,movieGenres,movieActors):
     Log('******UPDATE CALLED*******')
     metadata.studio = 'KB Productions'
     url = str(metadata.id).split("|")[0].replace('_','/')
+    if url.startswith('/'):
+        url = 'https:/' + url
     detailsPageElements = HTML.ElementFromURL(url)
 
     # Summary
-    paragraph = detailsPageElements.xpath('//div[@class="desc"]')[0].text_content().strip()
+    paragraph = detailsPageElements.xpath('//div[@class="content-page-info"]//div[contains(@class,"desc")]')[0].text_content().strip()
     #paragraph = paragraph.replace('&13;', '').strip(' \t\n\r"').replace('\n','').replace('  ','') + "\n\n"
     metadata.summary = paragraph
     tagline = 'Nympho'
     metadata.collections.clear()
     metadata.tagline = tagline
     metadata.collections.add(tagline)
-    metadata.title = detailsPageElements.xpath('//h2[@class="title"]')[0].text_content()
+    metadata.title = detailsPageElements.xpath('//div[@class="content-page-info"]//h2[@class="title"]')[0].text_content()
 
     # Genres
     movieGenres.clearGenres()
@@ -88,17 +90,17 @@ def update(metadata,siteID,movieGenres,movieActors):
 
     # Actors
     movieActors.clearActors()
-    actors = detailsPageElements.xpath('(//h4[@class="models"])[1]//a')
+    actors = detailsPageElements.xpath('(//div[@class="content-page-info"]//h4[@class="models"])[1]//a')
     if len(actors) > 0:
         for actorLink in actors:
             actorName = str(actorLink.text_content().strip())
             actorPageURL = actorLink.get("href")
             actorPage = HTML.ElementFromURL(actorPageURL)
-            actorPhotoURL = actorPage.xpath('//div[@class="model-photo"]//img')[0].get("src")
+            actorPhotoURL = actorPage.xpath('//div[contains(@class,"wrap-model")]//img')[0].get("src")
             movieActors.addActor(actorName,actorPhotoURL)
 
     # Release Date
-    date = detailsPageElements.xpath('//span[@class="post-date"]')
+    date = detailsPageElements.xpath('//div[@class="content-page-info"]//span[contains(@class,"date") and not(contains(@class,"mobile"))]')
     if len(date) > 0:
         date = date[0].text_content().strip()
         date_object = parse(date)
@@ -108,7 +110,7 @@ def update(metadata,siteID,movieGenres,movieActors):
     #Posters
     i = 1
     try:
-        background = detailsPageElements.xpath('//div[@id="trailer-player"]')[0].get('data-screencap')
+        background = detailsPageElements.xpath('//div[@class="content-page-info"]//div[@id="trailer-player"]')[0].get('data-screencap')
         Log("BG DL: " + background)
         metadata.art[background] = Proxy.Preview(HTTP.Request(background, headers={'Referer': 'http://www.google.com'}).content, sort_order = 1)
     except:
